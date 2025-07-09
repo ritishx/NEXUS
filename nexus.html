@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f1f23" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="NEXUS - Advanced AI Assistant with multi-model support" />
+  <title>NEXUS - Advanced AI Assistant</title>
+  
+  <!-- Preload critical resources -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" as="style">
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" as="style">
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="nexus.css" />
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/images/NEXUS.png">
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <!-- Header -->
+  <header class="app-header" role="banner">
+    <div class="logo">
+      <img src="/images/NEXUS.png" alt="NEXUS Logo" />
+      <h1>NEXUS</h1>
+      <!-- Session Timer - Now clickable for analytics -->
+      <div class="session-timer clickable" id="session-timer" title="Click for detailed analytics" aria-label="Session duration - click for analytics" tabindex="0">
+        <span class="material-symbols-outlined">schedule</span>
+        <span id="timer-display">00:00</span>
+      </div>
+      <!-- Analytics Display - Now clickable -->
+      <div class="analytics-display clickable" id="analytics-display" title="Click for detailed analytics" tabindex="0">
+        <span class="material-symbols-outlined">analytics</span>
+        <span id="message-count">0</span>
+      </div>
+    </div>
+    <div class="app-actions">
+      <!-- Model Selector -->
+      <div class="model-selector">
+        <button id="model-btn" class="header-btn" title="AI Model" aria-label="Select AI model">
+          <span class="material-symbols-outlined">psychology</span>
+          <span id="current-model">Gemini</span>
+        </button>
+      </div>
+      <!-- Personality Mode Selector -->
+      <div class="personality-selector">
+        <button id="personality-btn" class="header-btn" title="Personality Mode" aria-label="Change personality mode">
+          <span class="material-symbols-outlined">mood</span>
+          <span id="current-personality">Professional</span>
+        </button>
+      </div>
+      <!-- Settings Button -->
+      <button id="settings-btn" class="header-btn" title="Settings" aria-label="Open settings">
+        <span class="material-symbols-outlined">settings</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Application Container -->
+  <div class="app-container">
+    <!-- Sidebar with Saved Chats -->
+    <aside class="sidebar" role="complementary" aria-label="Chat history">
+      <div class="sidebar-header">
+        <h2>Conversations</h2>
+        <div class="search-container">
+          <input type="text" id="search-chats" placeholder="Search conversations..." aria-label="Search conversations" />
+          <span class="material-symbols-outlined search-icon">search</span>
+        </div>
+        <!-- Memory Toggle -->
+        <div class="memory-toggle-container">
+          <label class="memory-toggle">
+            <input type="checkbox" id="memory-toggle" checked aria-describedby="memory-description" />
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Remember chats</span>
+          </label>
+          <small id="memory-description" class="sr-only">Enable to save chat history locally</small>
+        </div>
+        <!-- Prompt Templates -->
+        <div class="prompt-templates">
+          <button class="template-btn" data-category="coding" title="Coding templates">
+            <span class="material-symbols-outlined">code</span>
+          </button>
+          <button class="template-btn" data-category="writing" title="Writing templates">
+            <span class="material-symbols-outlined">edit</span>
+          </button>
+          <button class="template-btn" data-category="analysis" title="Analysis templates">
+            <span class="material-symbols-outlined">analytics</span>
+          </button>
+        </div>
+      </div>
+      <div class="saved-chats-container" role="list" aria-label="Saved conversations">
+        <!-- Saved chats will be inserted here dynamically -->
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content" role="main">
+      <!-- Sidebar Toggle Button - Enhanced with animation -->
+      <button id="toggle-sidebar" class="sidebar-toggle-btn" aria-label="Toggle sidebar" aria-expanded="true" style="min-width:44px;min-height:44px;">
+        <span class="material-symbols-outlined toggle-icon">menu</span>
+      </button>
+      
+      <!-- Drag and Drop Overlay -->
+      <div class="drag-drop-overlay" id="drag-drop-overlay">
+        <div class="drag-drop-content">
+          <span class="material-symbols-outlined">cloud_upload</span>
+          <h3>Drop files here</h3>
+          <p>Support for images, documents, and code files</p>
+        </div>
+      </div>
+      
+      <!-- Chat container -->
+      <div class="chat-container" role="log" aria-label="Chat messages" aria-live="polite">
+        <!-- Chat messages will be inserted here dynamically -->
+      </div>
+
+      <!-- Code Execution Panel -->
+      <div class="code-execution-panel" id="code-execution-panel" style="display: none;">
+        <div class="code-panel-header">
+          <div class="code-panel-title">
+            <span class="material-symbols-outlined">terminal</span>
+            <span>Code Execution</span>
+          </div>
+          <div class="code-panel-actions">
+            <button id="minimize-code-panel" class="code-panel-btn" title="Minimize">
+              <span class="material-symbols-outlined">minimize</span>
+            </button>
+            <button id="close-code-panel" class="code-panel-btn" title="Close">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+        </div>
+        <div class="code-panel-content">
+          <div class="code-input-section">
+            <div class="code-language-selector">
+              <select id="code-language-select">
+                <option value="javascript">JavaScript</option>
+                <option value="python">Python</option>
+                <option value="html">HTML</option>
+                <option value="css">CSS</option>
+              </select>
+            </div>
+            <div class="code-editor-container">
+              <textarea id="code-editor" placeholder="Enter your code here..." spellcheck="false"></textarea>
+            </div>
+            <div class="code-actions">
+              <button id="run-code-btn" class="btn-primary">
+                <span class="material-symbols-outlined">play_arrow</span>
+                Run Code
+              </button>
+              <button id="clear-code-btn" class="btn-secondary">
+                <span class="material-symbols-outlined">clear</span>
+                Clear
+              </button>
+            </div>
+          </div>
+          <div class="code-output-section">
+            <div class="output-header">
+              <span class="material-symbols-outlined">output</span>
+              <span>Output</span>
+              
+              <button id="clear-output-btn" class="code-panel-btn" title="Clear output">
+                <span class="material-symbols-outlined">clear_all</span>
+              </button>
+            </div>
+            <div class="code-output" id="code-output">
+              <div class="output-placeholder">Run code to see output here...</div>
+              <!-- Standard output code block, dynamically filled -->
+              <pre class="output-code-content" style="display:none; position: relative;"><button class="copy-output-btn" title="Copy output" aria-label="Copy output" tabindex="0"><span class="material-symbols-outlined">content_copy</span></button><code></code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- --- Floating Buttons Start --- -->
+      <!-- Floating Action Buttons -->
+      <div class="floating-actions">
+        <button id="floating-mic-btn" class="floating-btn mic-btn" title="Voice input" aria-label="Start voice input">
+          <span class="material-symbols-outlined">mic</span>
+        </button>
+        <button id="floating-file-btn" class="floating-btn file-btn" title="Upload files" aria-label="Upload files">
+          <span class="material-symbols-outlined">attach_file</span>
+        </button>
+      </div>
+      <!-- --- Floating Buttons End --- -->
+
+      <!-- Input Area -->
+      <div class="typing-container">
+        <!-- Command Suggestions -->
+        <div class="command-suggestions" id="command-suggestions" style="display: none;" role="listbox" aria-label="Command suggestions">
+          <!-- Command suggestions will be populated here -->
+        </div>
+        
+        <!-- Autocomplete Suggestions -->
+        <div class="autocomplete-suggestions" id="autocomplete-suggestions" style="display: none;" role="listbox" aria-label="Autocomplete suggestions">
+          <!-- Autocomplete suggestions will be populated here -->
+        </div>
+
+        <!-- --- Voice Transcript Bubble Start --- -->
+        <!-- Speech Transcript Bubble -->
+        <div class="speech-transcript" id="speech-transcript" style="display: none;" aria-live="polite">
+          <div class="transcript-content">
+            <span class="transcript-text" id="transcript-text"></span>
+            <div class="transcript-indicator">
+              <div class="pulse-dot"></div>
+              <span>Listening...</span>
+            </div>
+          </div>
+        </div>
+        <!-- --- Voice Transcript Bubble End --- -->
+
+        <div class="typing-content">
+          <div class="typing-textarea">
+            <textarea 
+              name="textarea" 
+              id="text-input" 
+              placeholder="Type your message here... Use / for commands" 
+              required
+              aria-label="Message input"
+              rows="1"
+              maxlength="4000"
+            ></textarea>
+            <div class="input-actions">
+              <button id="code-execute-btn" class="input-action-btn" title="Open code editor" style="display: none;">
+                <span class="material-symbols-outlined">code</span>
+              </button>
+              <button id="send-btn" class="material-symbols-outlined" aria-label="Send message">send</button>
+            </div>
+          </div>
+          <div class="typing-controls"> 
+            <button id="light-btn" class="control-btn" title="Toggle theme" aria-label="Toggle light/dark mode">
+              <span class="material-symbols-outlined">light_mode</span>
+            </button>
+            <button id="delete-btn" class="control-btn" title="Clear chat" aria-label="Clear current chat">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+            <button id="export-btn" class="control-btn" title="Export chat" aria-label="Export current chat">
+              <span class="material-symbols-outlined">download</span>
+            </button>
+            <!-- --- Chat Enhancement Buttons Start --- -->
+            <button id="summarize-btn" class="control-btn" title="Summarize chat" aria-label="Summarize current chat">
+              <span class="material-symbols-outlined">summarize</span>
+            </button>
+            <!-- FIXED: Added Read Aloud Button -->
+            <button id="read-btn" class="control-btn" title="Read last message aloud" aria-label="Read last message aloud">
+              <span class="material-symbols-outlined">volume_up</span>
+            </button>
+            <!-- --- Chat Enhancement Buttons End --- -->
+          </div>
+          <div class="typing-actions">
+            <!-- Voice, file upload, and other action buttons will be added here dynamically -->
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Model Selection Modal -->
+  <div class="modal-overlay" id="model-modal" role="dialog" aria-labelledby="model-modal-title" aria-hidden="true" ontouchstart="">
+    <div class="modal-content draggable-modal">
+      <div class="modal-header draggable-header">
+        <h2 id="model-modal-title">Select AI Model</h2>
+        <button class="modal-close" aria-label="Close modal" style="min-width:44px;min-height:44px;">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="model-grid">
+          <div class="model-card" data-model="gemini">
+            <span class="material-symbols-outlined">auto_awesome</span>
+            <h3>Google Gemini</h3>
+            <p>Fast and versatile AI model</p>
+            <div class="model-status online"></div>
+          </div>
+          <div class="model-card" data-model="gpt4">
+            <span class="material-symbols-outlined">psychology</span>
+            <h3>OpenAI GPT-4</h3>
+            <p>Advanced reasoning and creativity</p>
+            <div class="model-status online"></div>
+          </div>
+          <div class="model-card" data-model="claude">
+            <span class="material-symbols-outlined">smart_toy</span>
+            <h3>Anthropic Claude</h3>
+            <p>Helpful, harmless, and honest</p>
+            <div class="model-status online"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Personality Mode Modal -->
+  <div class="modal-overlay" id="personality-modal" role="dialog" aria-labelledby="personality-modal-title" aria-hidden="true">
+    <div class="modal-content draggable-modal">
+      <div class="modal-header draggable-header">
+        <h2 id="personality-modal-title">Select Personality Mode</h2>
+        <button class="modal-close" aria-label="Close personality selector">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="personality-grid">
+          <div class="personality-card" data-personality="professional">
+            <span class="material-symbols-outlined">business_center</span>
+            <h3>Professional</h3>
+            <p>Formal and business-oriented</p>
+          </div>
+          <div class="personality-card" data-personality="friendly">
+            <span class="material-symbols-outlined">sentiment_satisfied</span>
+            <h3>Friendly</h3>
+            <p>Warm and approachable</p>
+          </div>
+          <div class="personality-card" data-personality="sarcastic">
+            <span class="material-symbols-outlined">mood</span>
+            <h3>Sarcastic</h3>
+            <p>Witty and humorous</p>
+          </div>
+          <div class="personality-card" data-personality="creative">
+            <span class="material-symbols-outlined">palette</span>
+            <h3>Creative</h3>
+            <p>Imaginative and artistic</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settings-modal" role="dialog" aria-labelledby="settings-modal-title" aria-hidden="true">
+    <div class="modal-content large draggable-modal">
+      <div class="modal-header draggable-header">
+        <h2 id="settings-modal-title">Settings</h2>
+        <button class="modal-close" aria-label="Close settings">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-tabs" role="tablist">
+          <button class="settings-tab active" data-tab="general" role="tab" aria-selected="true">General</button>
+          <button class="settings-tab" data-tab="models" role="tab" aria-selected="false">Models</button>
+          <button class="settings-tab" data-tab="plugins" role="tab" aria-selected="false">Plugins</button>
+          <button class="settings-tab" data-tab="export" role="tab" aria-selected="false">Export</button>
+        </div>
+        
+        <div class="settings-panel active" id="general-panel" role="tabpanel">
+          <div class="setting-group">
+            <label>Theme</label>
+            <select id="theme-select">
+              <option value="auto">Auto (System)</option>
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+              <option value="matrix">Matrix</option>
+              <option value="cyberpunk">Cyberpunk</option>
+            </select>
+          </div>
+          <div class="setting-group">
+            <label>Font Size</label>
+            <input type="range" id="font-size-slider" min="12" max="20" value="14" />
+          </div>
+          <div class="setting-group">
+            <label>Auto-save Interval (minutes)</label>
+            <input type="number" id="autosave-interval" min="1" max="60" value="5" />
+          </div>
+          <div class="setting-group">
+            <label>User Profile</label>
+            <div class="user-profile-settings">
+              <div class="profile-image-selector">
+                <img id="user-profile-preview" src="/images/user-default.png" alt="User Profile" />
+                <button id="change-profile-btn" class="btn-secondary">Change Image</button>
+                <input type="file" id="profile-image-input" accept="image/*" style="display: none;" />
+              </div>
+              <input type="text" id="user-name-input" placeholder="Enter your name" value="User" />
+            </div>
+          </div>
+        </div>
+        
+        <div class="settings-panel" id="models-panel" role="tabpanel">
+          <div class="setting-group">
+            <label>Default Model</label>
+            <select id="default-model-select">
+              <option value="gemini">Google Gemini</option>
+              <option value="gpt4">OpenAI GPT-4</option>
+              <option value="claude">Anthropic Claude</option>
+            </select>
+          </div>
+          <div class="setting-group">
+            <label>API Keys</label>
+            <div class="api-keys">
+              <input type="password" id="openai-key" placeholder="OpenAI API Key" />
+              <input type="password" id="claude-key" placeholder="Claude API Key" />
+            </div>
+          </div>
+        </div>
+        
+        <div class="settings-panel" id="plugins-panel" role="tabpanel">
+          <div class="plugin-list">
+            <div class="plugin-item">
+              <div class="plugin-info">
+                <h4>Code Execution</h4>
+                <small>Execute JavaScript and Python code safely</small>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="code-plugin" checked />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="plugin-item">
+              <div class="plugin-info">
+                <h4>Image Generation</h4>
+                <small>Generate images using AI models</small>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="image-plugin" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <div class="settings-panel" id="export-panel" role="tabpanel">
+          <div class="export-options">
+            <button class="btn-primary" id="export-json">Export as JSON</button>
+            <button class="btn-primary" id="export-markdown">Export as Markdown</button>
+            <button class="btn-primary" id="export-pdf">Export as PDF</button>
+            <button class="btn-secondary" id="import-data">Import Data</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- --- Analytics Modal Start --- -->
+  <!-- Analytics Modal -->
+  <div class="modal-overlay" id="analytics-modal" role="dialog" aria-labelledby="analytics-modal-title" aria-hidden="true">
+    <div class="modal-content large draggable-modal">
+      <div class="modal-header draggable-header">
+        <h2 id="analytics-modal-title">Session Analytics</h2>
+        <button class="modal-close" aria-label="Close analytics">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="analytics-grid">
+          <div class="analytics-card">
+            <h3>Session Time</h3>
+            <div class="analytics-value" id="analytics-session-time">00:00:00</div>
+          </div>
+          <div class="analytics-card">
+            <h3>Messages Sent</h3>
+            <div class="analytics-value" id="analytics-message-count">0</div>
+          </div>
+          <div class="analytics-card">
+            <h3>Average Words per Message</h3>
+            <div class="analytics-value" id="analytics-avg-words">0</div>
+          </div>
+          <div class="analytics-card">
+            <h3>Average Response Time</h3>
+            <div class="analytics-value" id="analytics-avg-response">0ms</div>
+          </div>
+          <div class="analytics-card">
+            <h3>Total Characters</h3>
+            <div class="analytics-value" id="analytics-total-chars">0</div>
+          </div>
+          <div class="analytics-card">
+            <h3>Active Model</h3>
+            <div class="analytics-value" id="analytics-current-model">Gemini</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- --- Analytics Modal End --- -->
+
+  <!-- Template Modal -->
+  <div class="modal-overlay" id="template-modal" role="dialog" aria-labelledby="template-modal-title" aria-hidden="true">
+    <div class="modal-content draggable-modal">
+      <div class="modal-header draggable-header">
+        <h2 id="template-modal-title">Prompt Templates</h2>
+        <button class="modal-close" aria-label="Close templates">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="template-list" id="template-list">
+          <!-- Templates will be populated here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- File Preview Modal -->
+  <div class="modal-overlay" id="file-preview-modal" role="dialog" aria-labelledby="file-preview-title" aria-hidden="true">
+    <div class="modal-content large draggable-modal">
+      <div class="modal-header draggable-header">
+        <h2 id="file-preview-title">File Preview</h2>
+        <button class="modal-close" aria-label="Close file preview">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="file-preview-content" id="file-preview-content">
+          <!-- File content will be displayed here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar overlay for mobile -->
+  <div class="sidebar-overlay" id="sidebar-overlay" aria-hidden="true" ontouchstart=""></div>
+  
+  <!-- Loading indicator -->
+  <div id="loading-indicator" style="display: none;" aria-hidden="true">
+    <div class="loading-spinner"></div>
+    <span>Processing...</span>
+  </div>
+
+  <!-- Toast notifications -->
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- FIXED: Hidden file input for uploads -->
+  <input type="file" id="file-input" style="display: none;" multiple accept="*/*" />
+
+  <!-- --- Message Hover Preview Start --- -->
+  <!-- Message Preview Tooltip -->
+  <div id="message-preview-tooltip" class="message-preview-tooltip" style="display: none;">
+    <div class="preview-content">
+      <div class="preview-text"></div>
+      <div class="preview-timestamp"></div>
+    </div>
+  </div>
+  <!-- --- Message Hover Preview End --- -->
+
+  <!-- JavaScript -->
+  <script src="nexus.js" defer></script>
+</body>
+</html>
