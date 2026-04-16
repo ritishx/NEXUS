@@ -117,7 +117,7 @@ class NexusAI {
     this.apiConfigs = {
       gemini: {
         url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
-        key: "AIzaSyB0Cti2NvWqocnx6huDV7G8i_K8lOmiSzU",
+        key: "Api Here",
         streaming: false,
       },
       gpt4: {
